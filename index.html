@@ -313,24 +313,25 @@ document.addEventListener('click',e=>{if(!e.target.closest('.srch'))document.get
 const BASE_URL = "https://minsu8611-art.github.io/travel-guide/";
 
 function copyShareLink(cityName) {
-  const url = BASE_URL + '#' + encodeURIComponent(cityName);
+  const url = BASE_URL + '?city=' + encodeURIComponent(cityName);
+  const doFeedback = () => {
+    const btn = document.getElementById('share-btn');
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✅ 복사됨!';
+      btn.style.background = '#27ae60';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 2000);
+    }
+  };
   const fallback = () => {
     const ta = document.createElement('textarea');
     ta.value = url; document.body.appendChild(ta);
     ta.select(); document.execCommand('copy');
     document.body.removeChild(ta);
-    alert('링크 복사됨!\n' + url);
+    doFeedback();
   };
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => {
-      const btn = document.getElementById('share-btn');
-      if (btn) {
-        const orig = btn.innerHTML;
-        btn.innerHTML = '✅ 복사됨!';
-        btn.style.background = '#27ae60';
-        setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 2000);
-      }
-    }).catch(fallback);
+    navigator.clipboard.writeText(url).then(doFeedback).catch(fallback);
   } else { fallback(); }
 }
 
@@ -338,7 +339,7 @@ function copyShareLink(cityName) {
 const _origShowCity = showCity;
 showCity = function(name) {
   _origShowCity(name);
-  try { history.replaceState(null, '', '#' + encodeURIComponent(name)); } catch(e) {}
+  try { history.replaceState(null, '', '?city=' + encodeURIComponent(name)); } catch(e) {}
 };
 
 function showHomeClean() {
@@ -346,17 +347,19 @@ function showHomeClean() {
   try { history.replaceState(null, '', location.pathname); } catch(e) {}
 }
 
-// 초기 실행: showHome 먼저, 그 다음 해시 확인
+// 초기 실행: showHome 먼저, 그 다음 쿼리스트링 확인
 showHome();
-const _initHash = decodeURIComponent(location.hash.slice(1));
-if (_initHash && C[_initHash]) {
-  showCity(_initHash);
+const _initParams = new URLSearchParams(location.search);
+const _initCity = decodeURIComponent(_initParams.get('city') || '');
+if (_initCity && C[_initCity]) {
+  showCity(_initCity);
 }
 
 // 뒤로/앞으로 버튼
 window.addEventListener('popstate', function() {
-  const h = decodeURIComponent(location.hash.slice(1));
-  if (h && C[h]) { _origShowCity(h); }
+  const p = new URLSearchParams(location.search);
+  const c = decodeURIComponent(p.get('city') || '');
+  if (c && C[c]) { _origShowCity(c); }
   else { showHome(); }
 });
 
