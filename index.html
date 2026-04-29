@@ -313,7 +313,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('.srch'))document.get
 const BASE_URL = "https://minsu8611-art.github.io/travel-guide/";
 
 function copyShareLink(cityName) {
-  const url = BASE_URL + '?city=' + encodeURIComponent(cityName);
+  const url = BASE_URL + '#' + encodeURIComponent(cityName);
   const doFeedback = () => {
     const btn = document.getElementById('share-btn');
     if (btn) {
@@ -339,7 +339,7 @@ function copyShareLink(cityName) {
 const _origShowCity = showCity;
 showCity = function(name) {
   _origShowCity(name);
-  try { history.replaceState(null, '', '?city=' + encodeURIComponent(name)); } catch(e) {}
+  try { history.replaceState(null, '', '#' + encodeURIComponent(name)); } catch(e) {}
 };
 
 function showHomeClean() {
@@ -347,20 +347,23 @@ function showHomeClean() {
   try { history.replaceState(null, '', location.pathname); } catch(e) {}
 }
 
-// 초기 실행: showHome 먼저, 그 다음 쿼리스트링 확인
+// 초기 실행: showHome → 즉시 해시 확인 (동기)
 showHome();
-const _initParams = new URLSearchParams(location.search);
-const _initCity = decodeURIComponent(_initParams.get('city') || '');
-if (_initCity && C[_initCity]) {
-  showCity(_initCity);
-}
+(function() {
+  const raw = location.hash.slice(1);
+  if (!raw) return;
+  const city = decodeURIComponent(raw);
+  if (C[city]) { _origShowCity(city); }
+})();
 
 // 뒤로/앞으로 버튼
 window.addEventListener('popstate', function() {
-  const p = new URLSearchParams(location.search);
-  const c = decodeURIComponent(p.get('city') || '');
-  if (c && C[c]) { _origShowCity(c); }
-  else { showHome(); }
+  const raw = location.hash.slice(1);
+  if (raw) {
+    const c = decodeURIComponent(raw);
+    if (C[c]) { _origShowCity(c); return; }
+  }
+  showHome();
 });
 
 // ── 모바일 사이드바 토글
@@ -375,7 +378,6 @@ function closeSidebar(){
   document.getElementById('sb-overlay').classList.remove('show');
 }
 // 도시 선택 후 모바일에서 자동 닫기
-const _origShowCity = showCity;
 // showCity 내부에서 closeSidebar 호출하도록 래핑
 document.addEventListener('click', function(e){
   const btn = e.target.closest('.scb');
