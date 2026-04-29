@@ -351,6 +351,11 @@ function showHomeClean() {
 showHome();
 (function() {
   const raw = location.hash.slice(1);
+  const search = location.search;
+  // 디버그: 카카오톡에서 해시가 전달되는지 확인
+  if (raw || search) {
+    alert('전달된 값:\nhash=' + raw + '\nsearch=' + search);
+  }
   if (!raw) return;
   const city = decodeURIComponent(raw);
   if (C[city]) { _origShowCity(city); }
