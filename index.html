@@ -271,7 +271,7 @@ function showCity(name){
 
 function showHome(){
   document.querySelectorAll('.scb').forEach(b=>b.classList.remove('on'));
-  history.replaceState(null,'',location.pathname);
+  try{history.replaceState(null,'',location.pathname);}catch(e){}
   const rg={};
   for(const[c,d]of Object.entries(C))rg[d.region]=(rg[d.region]||[]).concat(c);
   const order=["일본","동남아·대만·서남아","말레이시아","유럽·아프리카","중국·홍콩·몽골·중앙아시아","미주·하와이·캐나다·중남미","호주·뉴질랜드","괌·사이판"];
@@ -309,7 +309,56 @@ document.getElementById('si').addEventListener('input',function(){
   sd.classList.add('on');
 });
 document.addEventListener('click',e=>{if(!e.target.closest('.srch'))document.getElementById('sd').classList.remove('on');});
+// ── 초기화: showHome 후 URL 해시 확인
+const BASE_URL = "https://minsu8611-art.github.io/travel-guide/";
+
+function copyShareLink(cityName) {
+  const url = BASE_URL + '#' + encodeURIComponent(cityName);
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('링크 복사됨!\n' + url);
+  };
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('share-btn');
+      if (btn) {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ 복사됨!';
+        btn.style.background = '#27ae60';
+        setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 2000);
+      }
+    }).catch(fallback);
+  } else { fallback(); }
+}
+
+// showCity 호출 시 URL 해시 업데이트
+const _origShowCity = showCity;
+showCity = function(name) {
+  _origShowCity(name);
+  try { history.replaceState(null, '', '#' + encodeURIComponent(name)); } catch(e) {}
+};
+
+function showHomeClean() {
+  showHome();
+  try { history.replaceState(null, '', location.pathname); } catch(e) {}
+}
+
+// 초기 실행: showHome 먼저, 그 다음 해시 확인
 showHome();
+const _initHash = decodeURIComponent(location.hash.slice(1));
+if (_initHash && C[_initHash]) {
+  showCity(_initHash);
+}
+
+// 뒤로/앞으로 버튼
+window.addEventListener('popstate', function() {
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h && C[h]) { _origShowCity(h); }
+  else { showHome(); }
+});
 
 // ── 모바일 사이드바 토글
 function toggleSidebar(){
@@ -331,56 +380,11 @@ document.addEventListener('click', function(e){
 });
 
 
-// ── URL 해시 공유 기능
-const BASE_URL = "https://minsu8611-art.github.io/travel-guide/";
 
-// 페이지 로드 시 해시 읽어서 해당 도시 자동 오픈
-function checkHash() {
-  const hash = decodeURIComponent(location.hash.slice(1));
-  if (hash && C[hash]) {
-    showCity(hash);
-  }
-}
-// showHome() 호출 직후 해시 확인 (showHome이 마지막에 실행되므로 그 뒤에 덮어씀)
-document.addEventListener('DOMContentLoaded', function() {
-  // showHome()이 실행된 뒤 해시 체크
-  setTimeout(checkHash, 0);
-});
-// 브라우저 뒤로/앞으로 버튼 대응
-window.addEventListener('popstate', checkHash);
 
-// showCity 호출 시 URL 해시 업데이트 (기존 showCity 래핑)
-const _showCity = showCity;
-showCity = function(name) {
-  _showCity(name);
-  history.replaceState(null, '', '#' + encodeURIComponent(name));
-};
 
-// 공유 링크 복사
-function copyShareLink(cityName) {
-  const url = BASE_URL + '#' + encodeURIComponent(cityName);
-  navigator.clipboard.writeText(url).then(() => {
-    const btn = document.getElementById('share-btn');
-    if (btn) {
-      const orig = btn.innerHTML;
-      btn.innerHTML = '✅ 복사됨!';
-      btn.style.background = '#27ae60';
-      setTimeout(() => {
-        btn.innerHTML = orig;
-        btn.style.background = '';
-      }, 2000);
-    }
-  }).catch(() => {
-    // clipboard API 실패 시 fallback
-    const ta = document.createElement('textarea');
-    ta.value = BASE_URL + '#' + encodeURIComponent(cityName);
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    alert('링크가 복사됐습니다!\n' + ta.value);
-  });
-}
+
+
 
 </script>
 </body>
